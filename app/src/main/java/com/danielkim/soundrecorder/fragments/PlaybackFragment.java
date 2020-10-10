@@ -2,11 +2,19 @@ package com.danielkim.soundrecorder.fragments;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.graphics.ColorFilter;
 import android.graphics.LightingColorFilter;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+
+import android.hardware.SensorManager;
 import android.media.MediaPlayer;
+
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.EditTextPreference;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
 import android.util.Log;
@@ -16,12 +24,19 @@ import android.view.WindowManager;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.danielkim.soundrecorder.MySharedPreferences;
 import com.danielkim.soundrecorder.R;
 import com.danielkim.soundrecorder.RecordingItem;
+import com.danielkim.soundrecorder.utils.CallBackUtil;
+import com.danielkim.soundrecorder.utils.OkhttpUtil;
 import com.melnykov.fab.FloatingActionButton;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
+
+import okhttp3.Call;
 
 /**
  * Created by Daniel on 1/1/2015.
@@ -32,7 +47,9 @@ public class PlaybackFragment extends DialogFragment{
 
     private static final String ARG_ITEM = "recording_item";
     private RecordingItem item;
-
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private StringBuffer sensorLog = new StringBuffer();
     private Handler mHandler = new Handler();
 
     private MediaPlayer mMediaPlayer = null;
@@ -42,6 +59,7 @@ public class PlaybackFragment extends DialogFragment{
     private TextView mCurrentProgressTextView = null;
     private TextView mFileNameTextView = null;
     private TextView mFileLengthTextView = null;
+
 
     //stores whether or not the mediaplayer is currently playing audio
     private boolean isPlaying = false;
@@ -61,6 +79,9 @@ public class PlaybackFragment extends DialogFragment{
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        Log.d(LOG_TAG, String.valueOf(getActivity()));
+        sensorManager = (SensorManager) getActivity().getSystemService(Context.SENSOR_SERVICE);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         super.onCreate(savedInstanceState);
         item = getArguments().getParcelable(ARG_ITEM);
 
@@ -209,18 +230,47 @@ public class PlaybackFragment extends DialogFragment{
     private void startPlaying() {
         mPlayButton.setImageResource(R.drawable.ic_media_pause);
         mMediaPlayer = new MediaPlayer();
-
         try {
+            // upload file to server
+
+            Log.d(LOG_TAG, "upload audio: " + item.getName());
+            File file = new File(item.getFilePath());
+            HashMap<String, String> parameters = new HashMap<>();
+            parameters.put("machine", MySharedPreferences.getPrefDevice(getActivity()));
+            parameters.put("name", item.getName());
+
+            Log.d(LOG_TAG, "device: " + parameters.get("machine"));
+            String host = MySharedPreferences.getPrefHost(getActivity());
+
+            OkhttpUtil.okHttpUploadFile("http://"+host+"/audio", file, "audio", OkhttpUtil.FILE_TYPE_AUDIO, parameters, new CallBackUtil.CallBackString() {
+                @Override
+                public void onFailure(Call call, Exception e) {
+                    Log.d(LOG_TAG, "upload fail");
+                    Log.d(LOG_TAG, e.toString());
+                }
+
+                @Override
+                public void onResponse(String response) {
+                    Log.d(LOG_TAG, "upload done");
+                }
+            });
+
+
+            Log.d(LOG_TAG, "play start");
+            // listen sensor
+            sensorManager.registerListener(sensorEventListener, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+
+            // play audio
             mMediaPlayer.setDataSource(item.getFilePath());
             mMediaPlayer.prepare();
             mSeekBar.setMax(mMediaPlayer.getDuration());
-
             mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override
                 public void onPrepared(MediaPlayer mp) {
                     mMediaPlayer.start();
                 }
             });
+
         } catch (IOException e) {
             Log.e(LOG_TAG, "prepare() failed");
         }
@@ -278,6 +328,31 @@ public class PlaybackFragment extends DialogFragment{
     }
 
     private void stopPlaying() {
+        Log.d(LOG_TAG ,"end play");
+        // stop listen
+        sensorManager.unregisterListener(sensorEventListener);
+
+        // upload accelerometer data
+        String host = MySharedPreferences.getPrefHost(getActivity());
+
+        HashMap<String, String> parameters = new HashMap<>();
+        parameters.put("machine", MySharedPreferences.getPrefDevice(getActivity()));
+        parameters.put("name", item.getName());
+        parameters.put("acclog", sensorLog.toString());
+        sensorLog = new StringBuffer();
+
+        OkhttpUtil.okHttpPost("http://"+host+"/acclog", parameters, new CallBackUtil.CallBackString() {
+            @Override
+            public void onFailure(Call call, Exception e) {
+                Log.e(LOG_TAG, "fail to upload log");
+            }
+
+            @Override
+            public void onResponse(String response) {
+                Log.e(LOG_TAG, "success to upload log");
+            }
+        });
+
         mPlayButton.setImageResource(R.drawable.ic_media_play);
         mHandler.removeCallbacks(mRunnable);
         mMediaPlayer.stop();
@@ -317,4 +392,34 @@ public class PlaybackFragment extends DialogFragment{
     private void updateSeekBar() {
         mHandler.postDelayed(mRunnable, 1000);
     }
+
+    // sensor listener
+    private SensorEventListener sensorEventListener = new SensorEventListener() {
+
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            try {
+                switch(event.sensor.getType()) {
+                    case Sensor.TYPE_ACCELEROMETER:
+                        String str = String.format("%d,%f,%f,%f\n",
+                                event.timestamp,
+                                event.values[0],
+                                event.values[1],
+                                event.values[2]);
+                        sensorLog.append(str);
+//                        Log.d(LOG_TAG, str);
+                        break;
+                    default:
+                        break;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+        }
+    };
 }

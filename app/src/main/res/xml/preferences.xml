@@ -8,4 +8,15 @@
         android:key="@string/pref_about_key"
         android:title="@string/pref_about_title"
         android:summary="@string/pref_about_desc"/>
+
+    <EditTextPreference
+        android:key="pref_host"
+        android:title="Server"
+        android:summary="127.0.0.1:5000" />
+
+    <EditTextPreference
+        android:key="pref_device"
+        android:title="Device"
+        android:summary="Iphone X"
+        />
 </PreferenceScreen>

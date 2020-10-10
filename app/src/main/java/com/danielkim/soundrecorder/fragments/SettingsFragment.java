@@ -2,6 +2,7 @@ package com.danielkim.soundrecorder.fragments;
 
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
+import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.support.annotation.Nullable;
@@ -41,5 +42,33 @@ public class SettingsFragment extends PreferenceFragment {
                 return true;
             }
         });
+
+        EditTextPreference hostPref = (EditTextPreference) findPreference("pref_host");
+        hostPref.setSummary(MySharedPreferences.getPrefHost(getActivity()));
+        hostPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                MySharedPreferences.setPrefHost(getActivity(), (String) newValue);
+
+                EditTextPreference hostPref = (EditTextPreference) findPreference("pref_host");
+                hostPref.setSummary(MySharedPreferences.getPrefHost(getActivity()));
+                return true;
+            }
+        });
+
+
+        EditTextPreference devicePref = (EditTextPreference) findPreference("pref_device");
+        devicePref.setSummary(MySharedPreferences.getPrefDevice(getActivity()));
+        devicePref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                MySharedPreferences.setPrefDevice(getActivity(), (String) newValue);
+
+                EditTextPreference devicePref = (EditTextPreference) findPreference("pref_device");
+                devicePref.setSummary(MySharedPreferences.getPrefDevice(getActivity()));
+                return true;
+            }
+        });
+
     }
 }
