@@ -1,10 +1,12 @@
 package com.danielkim.soundrecorder.fragments;
 
 import android.content.Intent;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,11 +16,20 @@ import android.widget.Chronometer;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.danielkim.soundrecorder.MySharedPreferences;
 import com.danielkim.soundrecorder.R;
 import com.danielkim.soundrecorder.RecordingService;
+import com.danielkim.soundrecorder.utils.CallBackUtil;
+import com.danielkim.soundrecorder.utils.OkhttpUtil;
 import com.melnykov.fab.FloatingActionButton;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
+import java.util.HashMap;
+
+import okhttp3.Call;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -44,6 +55,9 @@ public class RecordFragment extends Fragment {
     private boolean mStartRecording = true;
     private boolean mPauseRecording = true;
 
+    private Boolean recording = false;
+    private Boolean network = true;
+
     private Chronometer mChronometer = null;
     long timeWhenPaused = 0; //stores time when user clicks pause button
 
@@ -63,12 +77,20 @@ public class RecordFragment extends Fragment {
     }
 
     public RecordFragment() {
+
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        syncRecord();
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         position = getArguments().getInt(ARG_POSITION);
+        // sync recording
     }
 
     @Override
@@ -88,6 +110,8 @@ public class RecordFragment extends Fragment {
             public void onClick(View v) {
                 onRecord(mStartRecording);
                 mStartRecording = !mStartRecording;
+                recording = !recording;
+                updateRecord(recording);
             }
         });
 
@@ -98,6 +122,7 @@ public class RecordFragment extends Fragment {
             public void onClick(View v) {
                 onPauseRecord(mPauseRecording);
                 mPauseRecording = !mPauseRecording;
+
             }
         });
 
@@ -181,4 +206,74 @@ public class RecordFragment extends Fragment {
             mChronometer.start();
         }
     }
+
+    public void updateRecord(boolean record){
+        String host = MySharedPreferences.getPrefHost(getActivity());
+        HashMap<String, String> parameters = new HashMap<>();
+        parameters.put("recording", record? "1": "0");
+        OkhttpUtil.okHttpPost("http://"+host+"/syncrecording", parameters, new CallBackUtil.CallBackString() {
+
+            @Override
+            public void onFailure(Call call, Exception e) {
+                network = false;
+                Toast.makeText(getActivity(), "Fail to connect Server, Pls set server address on setting", Toast.LENGTH_LONG).show();
+                Log.e(LOG_TAG, "fail to updating record");
+            }
+
+            @Override
+            public void onResponse(String response) {
+                Log.e(LOG_TAG, "success to updating record");
+            }
+        });
+    }
+
+    public void syncRecord() {
+        Runnable runnable = new Runnable(){
+            @Override
+            public void run() {
+                String host = MySharedPreferences.getPrefHost(getActivity());
+                while(network){
+                    OkhttpUtil.okHttpGet("http://"+host+"/recording", new CallBackUtil.CallBackString() {
+                        @Override
+                        public void onFailure(Call call, Exception e) {
+                            network = false;
+                            Toast.makeText(getActivity(), "Fail to connect Server, Pls set server address on setting", Toast.LENGTH_LONG).show();
+                            Log.e(LOG_TAG, "fail to sync record");
+                        }
+
+                        @Override
+                        public void onResponse(String response) {
+//                            Log.e(LOG_TAG, "success to sync record：" + response);
+                            boolean temp = recording;
+                            try {
+                                JSONObject jsonObject = new JSONObject(response);
+                                String str = jsonObject.getString("recording");
+                                temp = str.equals("true")? true: false;
+                                
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                            if(temp != recording){
+                                Log.e(LOG_TAG, "play：" + recording);
+                                recording = !recording;
+                                onRecord(mStartRecording);
+                                mStartRecording = !mStartRecording;
+                            }
+                        }
+                    });
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+
+        Thread t1 = new Thread(runnable);
+        t1.start();
+
+    }
+
 }
