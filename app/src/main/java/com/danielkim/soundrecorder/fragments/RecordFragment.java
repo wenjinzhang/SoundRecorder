@@ -57,6 +57,8 @@ public class RecordFragment extends Fragment {
 
     private Boolean recording = false;
     private Boolean network = true;
+    private Boolean interrupt = false;
+    private String machine = null;
 
     private Chronometer mChronometer = null;
     long timeWhenPaused = 0; //stores time when user clicks pause button
@@ -83,14 +85,21 @@ public class RecordFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        interrupt = false;
         syncRecord();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        interrupt = true;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         position = getArguments().getInt(ARG_POSITION);
-        // sync recording
+        machine = MySharedPreferences.getPrefDevice(getActivity());
     }
 
     @Override
@@ -108,10 +117,12 @@ public class RecordFragment extends Fragment {
         mRecordButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onRecord(mStartRecording);
-                mStartRecording = !mStartRecording;
                 recording = !recording;
                 updateRecord(recording);
+
+                onRecord(mStartRecording);
+                mStartRecording = !mStartRecording;
+
             }
         });
 
@@ -122,7 +133,6 @@ public class RecordFragment extends Fragment {
             public void onClick(View v) {
                 onPauseRecord(mPauseRecording);
                 mPauseRecording = !mPauseRecording;
-
             }
         });
 
@@ -209,8 +219,10 @@ public class RecordFragment extends Fragment {
 
     public void updateRecord(boolean record){
         String host = MySharedPreferences.getPrefHost(getActivity());
+
         HashMap<String, String> parameters = new HashMap<>();
         parameters.put("recording", record? "1": "0");
+        parameters.put("machine", machine);
         OkhttpUtil.okHttpPost("http://"+host+"/syncrecording", parameters, new CallBackUtil.CallBackString() {
 
             @Override
@@ -232,7 +244,7 @@ public class RecordFragment extends Fragment {
             @Override
             public void run() {
                 String host = MySharedPreferences.getPrefHost(getActivity());
-                while(network){
+                while(network && !interrupt){
                     OkhttpUtil.okHttpGet("http://"+host+"/recording", new CallBackUtil.CallBackString() {
                         @Override
                         public void onFailure(Call call, Exception e) {
@@ -243,17 +255,18 @@ public class RecordFragment extends Fragment {
 
                         @Override
                         public void onResponse(String response) {
-//                            Log.e(LOG_TAG, "success to sync record：" + response);
+                            Log.e(LOG_TAG, "success to sync record：" + response);
                             boolean temp = recording;
+                            String commandMachine = null;
                             try {
                                 JSONObject jsonObject = new JSONObject(response);
                                 String str = jsonObject.getString("recording");
+                                commandMachine = jsonObject.getString("machine");
                                 temp = str.equals("true")? true: false;
-                                
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
-                            if(temp != recording){
+                            if(temp != recording && !commandMachine.equals(machine)){
                                 Log.e(LOG_TAG, "play：" + recording);
                                 recording = !recording;
                                 onRecord(mStartRecording);
@@ -263,7 +276,7 @@ public class RecordFragment extends Fragment {
                     });
 
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(200);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
