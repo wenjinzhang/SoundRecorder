@@ -60,6 +60,9 @@ public class PlaybackFragment extends DialogFragment{
     private TextView mFileNameTextView = null;
     private TextView mFileLengthTextView = null;
 
+    private boolean syncFlag = false;
+    private int samplingRate = 5000; // 200Hz
+
 
     //stores whether or not the mediaplayer is currently playing audio
     private boolean isPlaying = false;
@@ -258,7 +261,7 @@ public class PlaybackFragment extends DialogFragment{
 
             Log.d(LOG_TAG, "play start");
             // listen sensor
-            sensorManager.registerListener(sensorEventListener, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+            sensorManager.registerListener(sensorEventListener, accelerometer, samplingRate);
 
             // play audio
             mMediaPlayer.setDataSource(item.getFilePath());
