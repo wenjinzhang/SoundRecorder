@@ -73,7 +73,7 @@ public class RecordingService extends Service {
         if (mRecorder != null) {
             stopRecording();
         }
-
+        mDatabase.close();
         super.onDestroy();
     }
 

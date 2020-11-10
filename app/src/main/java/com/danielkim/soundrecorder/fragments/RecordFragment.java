@@ -12,7 +12,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.Chronometer;
+import android.widget.CompoundButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,6 +51,9 @@ public class RecordFragment extends Fragment {
     //Recording controls
     private FloatingActionButton mRecordButton = null;
     private Button mPauseButton = null;
+    private CheckBox syncCheckBox = null;
+    private Thread syncThread = null;
+
 
     private TextView mRecordingPrompt;
     private int mRecordPromptCount = 0;
@@ -85,14 +91,12 @@ public class RecordFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        interrupt = false;
-        syncRecord();
+        syncCheckBox.setChecked(false);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        interrupt = true;
     }
 
     @Override
@@ -135,6 +139,11 @@ public class RecordFragment extends Fragment {
                 mPauseRecording = !mPauseRecording;
             }
         });
+
+        // Sync checkbox
+        syncCheckBox = (CheckBox) recordView.findViewById(R.id.cbxSync);
+        syncCheckBox.setChecked(false);
+        syncCheckBox.setOnCheckedChangeListener(syncRecordingListener);
 
         return recordView;
     }
@@ -239,54 +248,65 @@ public class RecordFragment extends Fragment {
         });
     }
 
-    public void syncRecord() {
-        Runnable runnable = new Runnable(){
-            @Override
-            public void run() {
-                String host = MySharedPreferences.getPrefHost(getActivity());
-                while(network && !interrupt){
-                    OkhttpUtil.okHttpGet("http://"+host+"/recording", new CallBackUtil.CallBackString() {
-                        @Override
-                        public void onFailure(Call call, Exception e) {
-                            network = false;
-                            Toast.makeText(getActivity(), "Fail to connect Server, Pls set server address on setting", Toast.LENGTH_LONG).show();
-                            Log.e(LOG_TAG, "fail to sync record");
-                        }
+    //sync listener
+    CompoundButton.OnCheckedChangeListener syncRecordingListener = new CompoundButton.OnCheckedChangeListener() {
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
-                        @Override
-                        public void onResponse(String response) {
-                            Log.e(LOG_TAG, "success to sync record：" + response);
-                            boolean temp = recording;
-                            String commandMachine = null;
-                            try {
-                                JSONObject jsonObject = new JSONObject(response);
-                                String str = jsonObject.getString("recording");
-                                commandMachine = jsonObject.getString("machine");
-                                temp = str.equals("true")? true: false;
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
-                            if(temp != recording && !commandMachine.equals(machine)){
-                                Log.e(LOG_TAG, "play：" + recording);
-                                recording = !recording;
-                                onRecord(mStartRecording);
-                                mStartRecording = !mStartRecording;
-                            }
-                        }
-                    });
+            if(isChecked){
+                syncThread = new Thread(runnable);
+                interrupt = false;
+                syncThread.start();
+            }else{
+                interrupt = true;
+            }
+        }
+    };
 
-                    try {
-                        Thread.sleep(200);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+    Runnable runnable = new Runnable(){
+        @Override
+        public void run() {
+            String host = MySharedPreferences.getPrefHost(getActivity());
+            while(network && !interrupt){
+                OkhttpUtil.okHttpGet("http://"+host+"/recording", new CallBackUtil.CallBackString() {
+                    @Override
+                    public void onFailure(Call call, Exception e) {
+                        network = false;
+                        interrupt = true;
+                        Toast.makeText(getActivity(), "Fail to connect Server, Pls set server address on setting", Toast.LENGTH_SHORT).show();
+                        Log.e(LOG_TAG, "fail to sync record");
                     }
+
+                    @Override
+                    public void onResponse(String response) {
+                        Log.e(LOG_TAG, "success to sync record：" + response);
+                        boolean temp = recording;
+                        String commandMachine = null;
+                        try {
+                            JSONObject jsonObject = new JSONObject(response);
+                            String str = jsonObject.getString("recording");
+                            commandMachine = jsonObject.getString("machine");
+                            temp = str.equals("true")? true: false;
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        if(temp != recording && !commandMachine.equals(machine)){
+
+                            Log.e(LOG_TAG, "current play is " + recording + "I will do"+ temp);
+                            recording = !recording;
+                            onRecord(mStartRecording);
+                            mStartRecording = !mStartRecording;
+                        }
+                    }
+                });
+
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
-        };
-
-        Thread t1 = new Thread(runnable);
-        t1.start();
-
-    }
+        }
+    };
 
 }
