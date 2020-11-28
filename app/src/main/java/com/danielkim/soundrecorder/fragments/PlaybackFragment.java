@@ -61,7 +61,7 @@ public class PlaybackFragment extends DialogFragment{
     private TextView mFileLengthTextView = null;
 
     private boolean syncFlag = false;
-    private int samplingRate = 5000; // 200Hz
+    private int samplingRate = 10000; // 100Hz
 
 
     //stores whether or not the mediaplayer is currently playing audio
