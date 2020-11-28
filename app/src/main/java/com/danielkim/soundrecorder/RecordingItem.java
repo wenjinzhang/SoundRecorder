@@ -12,6 +12,7 @@ public class RecordingItem implements Parcelable {
     private int mId; //id in database
     private int mLength; // length of recording in seconds
     private long mTime; // date/time of the recording
+    private int msource; //  source from
 
     public RecordingItem()
     {
@@ -65,7 +66,19 @@ public class RecordingItem implements Parcelable {
         mTime = time;
     }
 
-    public static final Parcelable.Creator<RecordingItem> CREATOR = new Parcelable.Creator<RecordingItem>() {
+    public String getSource(){
+        if(msource == 0){
+            return "recorded";
+        }else if (msource == 1) {
+            return "server";
+        }else {
+            return "Unknown";
+        }
+    }
+
+    public void setSource(int s){ msource = s; }
+
+    public static final Creator<RecordingItem> CREATOR = new Creator<RecordingItem>() {
         public RecordingItem createFromParcel(Parcel in) {
             return new RecordingItem(in);
         }
@@ -82,6 +95,7 @@ public class RecordingItem implements Parcelable {
         dest.writeLong(mTime);
         dest.writeString(mFilePath);
         dest.writeString(mName);
+        dest.writeInt(msource);
     }
 
     @Override
