@@ -135,7 +135,7 @@ public class RecordingService extends Service {
         mRecorder = null;
 
         try {
-            mDatabase.addRecording(mFileName, mFilePath, mElapsedMillis);
+            mDatabase.addRecording(mFileName, mFilePath, mElapsedMillis, 0);
 
         } catch (Exception e){
             Log.e(LOG_TAG, "exception", e);

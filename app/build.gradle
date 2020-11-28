@@ -29,4 +29,6 @@ dependencies {
     compile 'com.melnykov:floatingactionbutton:1.1.0'
     compile 'com.jpardogo.materialtabstrip:library:1.0.6'
     compile "com.squareup.okhttp3:okhttp:3.10.0"
+    debugCompile 'com.idescout.sql:sqlscout-server:4.1'
+    releaseCompile 'com.idescout.sql:sqlscout-server-noop:4.1'
 }
