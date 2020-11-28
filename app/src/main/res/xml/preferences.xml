@@ -19,4 +19,9 @@
         android:title="Device"
         android:summary="Iphone X"
         />
+    <EditTextPreference
+        android:key="pref_sample_rate"
+        android:title= "Sample Rate(Hz)"
+        android:summary="100"
+        />
 </PreferenceScreen>

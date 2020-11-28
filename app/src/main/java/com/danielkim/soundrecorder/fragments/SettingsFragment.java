@@ -70,5 +70,17 @@ public class SettingsFragment extends PreferenceFragment {
             }
         });
 
+        EditTextPreference sampleRatePref = (EditTextPreference) findPreference("pref_sample_rate");
+        devicePref.setSummary(MySharedPreferences.getPrefDevice(getActivity()));
+        devicePref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                MySharedPreferences.setPrefDevice(getActivity(), (String) newValue);
+
+                EditTextPreference devicePref = (EditTextPreference) findPreference("pref_sample_rate");
+                devicePref.setSummary(MySharedPreferences.getPrefDevice(getActivity()));
+                return true;
+            }
+        });
     }
 }

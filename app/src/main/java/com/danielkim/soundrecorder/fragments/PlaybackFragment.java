@@ -61,7 +61,7 @@ public class PlaybackFragment extends DialogFragment{
     private TextView mFileLengthTextView = null;
 
     private boolean syncFlag = false;
-    private int samplingRate = 10000; // 100Hz
+    private int samplingPeriodUs = 10000; // 100Hz
 
 
     //stores whether or not the mediaplayer is currently playing audio
@@ -194,6 +194,19 @@ public class PlaybackFragment extends DialogFragment{
         alertDialog.getButton(Dialog.BUTTON_POSITIVE).setEnabled(false);
         alertDialog.getButton(Dialog.BUTTON_NEGATIVE).setEnabled(false);
         alertDialog.getButton(Dialog.BUTTON_NEUTRAL).setEnabled(false);
+
+        // init samplingPeriodUs
+        int sampleRate = Integer.parseInt(MySharedPreferences.getPrefSampleRate(getActivity()));
+        samplingPeriodUs = 1000000/sampleRate;
+
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // init samplingPeriodUs
+        int sampleRate = Integer.parseInt(MySharedPreferences.getPrefSampleRate(getActivity()));
+        samplingPeriodUs = 1000000/sampleRate;
     }
 
     @Override
@@ -261,8 +274,8 @@ public class PlaybackFragment extends DialogFragment{
 
             Log.d(LOG_TAG, "play start");
             // listen sensor
-            sensorManager.registerListener(sensorEventListener, accelerometer, samplingRate);
 
+            sensorManager.registerListener(sensorEventListener, accelerometer, samplingPeriodUs);
             // play audio
             mMediaPlayer.setDataSource(item.getFilePath());
             mMediaPlayer.prepare();
