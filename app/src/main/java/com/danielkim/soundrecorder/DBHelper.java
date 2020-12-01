@@ -10,6 +10,7 @@ import android.provider.BaseColumns;
 import com.danielkim.soundrecorder.listeners.OnDatabaseChangedListener;
 
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * Created by Daniel on 12/29/2014.
@@ -78,6 +79,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 DBHelperItem.COLUMN_NAME_TIME_ADDED,
                 DBHelperItem.COLUMN_NAME_SOURCE,
         };
+
         Cursor c = db.query(DBHelperItem.TABLE_NAME, projection, null, null, null, null, null);
         if (c.moveToPosition(position)) {
             RecordingItem item = new RecordingItem();
@@ -90,6 +92,42 @@ public class DBHelper extends SQLiteOpenHelper {
             c.close();
             return item;
         }
+        return null;
+    }
+
+    public RecordingItem getByName(String name){
+        SQLiteDatabase db = getReadableDatabase();
+        String[] projection = {
+                DBHelperItem._ID,
+                DBHelperItem.COLUMN_NAME_RECORDING_NAME,
+                DBHelperItem.COLUMN_NAME_RECORDING_FILE_PATH,
+                DBHelperItem.COLUMN_NAME_RECORDING_LENGTH,
+                DBHelperItem.COLUMN_NAME_TIME_ADDED,
+                DBHelperItem.COLUMN_NAME_SOURCE,
+        };
+        String selection = DBHelperItem.COLUMN_NAME_RECORDING_NAME + " = ?";
+        String[] selectionArgs = { name };
+        Cursor c = db.query(
+                DBHelperItem.TABLE_NAME,
+                projection,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                null
+        );
+        while(c.moveToNext()){
+            RecordingItem item = new RecordingItem();
+            item.setId(c.getInt(c.getColumnIndex(DBHelperItem._ID)));
+            item.setName(c.getString(c.getColumnIndex(DBHelperItem.COLUMN_NAME_RECORDING_NAME)));
+            item.setFilePath(c.getString(c.getColumnIndex(DBHelperItem.COLUMN_NAME_RECORDING_FILE_PATH)));
+            item.setLength(c.getInt(c.getColumnIndex(DBHelperItem.COLUMN_NAME_RECORDING_LENGTH)));
+            item.setTime(c.getLong(c.getColumnIndex(DBHelperItem.COLUMN_NAME_TIME_ADDED)));
+            item.setSource(c.getInt(c.getColumnIndex(DBHelperItem.COLUMN_NAME_SOURCE)));
+            c.close();
+            return item;
+        }
+
         return null;
     }
 

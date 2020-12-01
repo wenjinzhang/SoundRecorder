@@ -19,6 +19,7 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.danielkim.soundrecorder.DBHelper;
 import com.danielkim.soundrecorder.MySharedPreferences;
 import com.danielkim.soundrecorder.R;
 import com.danielkim.soundrecorder.RecordingService;
@@ -26,6 +27,7 @@ import com.danielkim.soundrecorder.utils.CallBackUtil;
 import com.danielkim.soundrecorder.utils.OkhttpUtil;
 import com.melnykov.fab.FloatingActionButton;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -54,7 +56,6 @@ public class RecordFragment extends Fragment {
     private CheckBox syncCheckBox = null;
     private Thread syncThread = null;
 
-
     private TextView mRecordingPrompt;
     private int mRecordPromptCount = 0;
 
@@ -68,6 +69,10 @@ public class RecordFragment extends Fragment {
 
     private Chronometer mChronometer = null;
     long timeWhenPaused = 0; //stores time when user clicks pause button
+
+    private Button mLoadServerButton = null;
+
+    private DBHelper mDatabase;
 
     /**
      * Use this factory method to create a new instance of
@@ -104,6 +109,7 @@ public class RecordFragment extends Fragment {
         super.onCreate(savedInstanceState);
         position = getArguments().getInt(ARG_POSITION);
         machine = MySharedPreferences.getPrefDevice(getActivity());
+        mDatabase = new DBHelper(getActivity().getApplicationContext());
     }
 
     @Override
@@ -144,6 +150,15 @@ public class RecordFragment extends Fragment {
         syncCheckBox = (CheckBox) recordView.findViewById(R.id.cbxSync);
         syncCheckBox.setChecked(false);
         syncCheckBox.setOnCheckedChangeListener(syncRecordingListener);
+
+        // load audio from server
+        mLoadServerButton = (Button) recordView.findViewById(R.id.btnLoadServer);
+        mLoadServerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                loadAudioFromServer();
+            }
+        });
 
         return recordView;
     }
@@ -309,4 +324,62 @@ public class RecordFragment extends Fragment {
         }
     };
 
+    private void loadAudioFromServer(){
+        final String host = MySharedPreferences.getPrefHost(getActivity());
+
+        OkhttpUtil.okHttpGet("http://"+host+"/audiolist", new CallBackUtil.CallBackString() {
+            @Override
+            public void onFailure(Call call, Exception e) {
+                network = false;
+                Toast.makeText(getActivity(), "Fail to connect Server, Pls set server host on setting", Toast.LENGTH_LONG).show();
+                Log.e(LOG_TAG, "fail to load audio from server");
+            }
+
+            @Override
+            public void onResponse(String response) {
+                Log.e(LOG_TAG, "success to get audio list");
+                try {
+                    JSONArray jsonArray = new JSONArray(response);
+                    for(int i = 0; i < jsonArray.length(); i++){
+                        JSONObject item = jsonArray.getJSONObject(i);
+                        String fileName = item.getString("name");
+                        long duration = Long.parseLong(item.getString("len"));
+                        String path = downloadFile(host, fileName);
+                        if(path != null){
+                            mDatabase.addRecording(fileName, path,duration,1);
+                        }
+                    }
+                }catch (JSONException e){
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    private String downloadFile(String host, String fileName){
+        String url = "http://"+host+"/server_audio/" + fileName;
+        String mFilePath = Environment.getExternalStorageDirectory().getAbsolutePath();
+        mFilePath += "/SoundRecorder/";
+        String mDestFileDir = mFilePath;
+        String mdestFileName = fileName;
+        String path = mFilePath + fileName;
+        File file = new File(path);
+        if(file.exists()){
+            return null;
+        }
+
+        OkhttpUtil.okHttpDownloadFile(url, new CallBackUtil.CallBackFile(mDestFileDir, mdestFileName) {
+            @Override
+            public void onFailure(Call call, Exception e) {
+
+            }
+
+            @Override
+            public void onResponse(File response) {
+                Log.d(LOG_TAG, "Download File ");
+            }
+        });
+
+        return path;
+    }
 }
