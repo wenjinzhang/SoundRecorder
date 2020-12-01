@@ -10,6 +10,7 @@ import android.provider.BaseColumns;
 import com.danielkim.soundrecorder.listeners.OnDatabaseChangedListener;
 
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * Created by Daniel on 12/29/2014.
@@ -31,6 +32,7 @@ public class DBHelper extends SQLiteOpenHelper {
         public static final String COLUMN_NAME_RECORDING_FILE_PATH = "file_path";
         public static final String COLUMN_NAME_RECORDING_LENGTH = "length";
         public static final String COLUMN_NAME_TIME_ADDED = "time_added";
+        public static final String COLUMN_NAME_SOURCE = "source";
     }
 
     private static final String TEXT_TYPE = " TEXT";
@@ -41,7 +43,9 @@ public class DBHelper extends SQLiteOpenHelper {
                     DBHelperItem.COLUMN_NAME_RECORDING_NAME + TEXT_TYPE + COMMA_SEP +
                     DBHelperItem.COLUMN_NAME_RECORDING_FILE_PATH + TEXT_TYPE + COMMA_SEP +
                     DBHelperItem.COLUMN_NAME_RECORDING_LENGTH + " INTEGER " + COMMA_SEP +
-                    DBHelperItem.COLUMN_NAME_TIME_ADDED + " INTEGER " + ")";
+                    DBHelperItem.COLUMN_NAME_TIME_ADDED + " INTEGER " + COMMA_SEP +
+                    DBHelperItem.COLUMN_NAME_SOURCE+ " INTEGER " +
+                    ")";
 
     @SuppressWarnings("unused")
     private static final String SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS " + DBHelperItem.TABLE_NAME;
@@ -72,8 +76,10 @@ public class DBHelper extends SQLiteOpenHelper {
                 DBHelperItem.COLUMN_NAME_RECORDING_NAME,
                 DBHelperItem.COLUMN_NAME_RECORDING_FILE_PATH,
                 DBHelperItem.COLUMN_NAME_RECORDING_LENGTH,
-                DBHelperItem.COLUMN_NAME_TIME_ADDED
+                DBHelperItem.COLUMN_NAME_TIME_ADDED,
+                DBHelperItem.COLUMN_NAME_SOURCE,
         };
+
         Cursor c = db.query(DBHelperItem.TABLE_NAME, projection, null, null, null, null, null);
         if (c.moveToPosition(position)) {
             RecordingItem item = new RecordingItem();
@@ -82,9 +88,46 @@ public class DBHelper extends SQLiteOpenHelper {
             item.setFilePath(c.getString(c.getColumnIndex(DBHelperItem.COLUMN_NAME_RECORDING_FILE_PATH)));
             item.setLength(c.getInt(c.getColumnIndex(DBHelperItem.COLUMN_NAME_RECORDING_LENGTH)));
             item.setTime(c.getLong(c.getColumnIndex(DBHelperItem.COLUMN_NAME_TIME_ADDED)));
+            item.setSource(c.getInt(c.getColumnIndex(DBHelperItem.COLUMN_NAME_SOURCE)));
             c.close();
             return item;
         }
+        return null;
+    }
+
+    public RecordingItem getByName(String name){
+        SQLiteDatabase db = getReadableDatabase();
+        String[] projection = {
+                DBHelperItem._ID,
+                DBHelperItem.COLUMN_NAME_RECORDING_NAME,
+                DBHelperItem.COLUMN_NAME_RECORDING_FILE_PATH,
+                DBHelperItem.COLUMN_NAME_RECORDING_LENGTH,
+                DBHelperItem.COLUMN_NAME_TIME_ADDED,
+                DBHelperItem.COLUMN_NAME_SOURCE,
+        };
+        String selection = DBHelperItem.COLUMN_NAME_RECORDING_NAME + " = ?";
+        String[] selectionArgs = { name };
+        Cursor c = db.query(
+                DBHelperItem.TABLE_NAME,
+                projection,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                null
+        );
+        while(c.moveToNext()){
+            RecordingItem item = new RecordingItem();
+            item.setId(c.getInt(c.getColumnIndex(DBHelperItem._ID)));
+            item.setName(c.getString(c.getColumnIndex(DBHelperItem.COLUMN_NAME_RECORDING_NAME)));
+            item.setFilePath(c.getString(c.getColumnIndex(DBHelperItem.COLUMN_NAME_RECORDING_FILE_PATH)));
+            item.setLength(c.getInt(c.getColumnIndex(DBHelperItem.COLUMN_NAME_RECORDING_LENGTH)));
+            item.setTime(c.getLong(c.getColumnIndex(DBHelperItem.COLUMN_NAME_TIME_ADDED)));
+            item.setSource(c.getInt(c.getColumnIndex(DBHelperItem.COLUMN_NAME_SOURCE)));
+            c.close();
+            return item;
+        }
+
         return null;
     }
 
@@ -115,7 +158,7 @@ public class DBHelper extends SQLiteOpenHelper {
         }
     }
 
-    public long addRecording(String recordingName, String filePath, long length) {
+    public long addRecording(String recordingName, String filePath, long length, int source) {
 
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -123,6 +166,8 @@ public class DBHelper extends SQLiteOpenHelper {
         cv.put(DBHelperItem.COLUMN_NAME_RECORDING_FILE_PATH, filePath);
         cv.put(DBHelperItem.COLUMN_NAME_RECORDING_LENGTH, length);
         cv.put(DBHelperItem.COLUMN_NAME_TIME_ADDED, System.currentTimeMillis());
+        cv.put(DBHelperItem.COLUMN_NAME_SOURCE, source);
+
         long rowId = db.insert(DBHelperItem.TABLE_NAME, null, cv);
 
         if (mOnDatabaseChangedListener != null) {

@@ -72,6 +72,8 @@ public class FileViewerAdapter extends RecyclerView.Adapter<FileViewerAdapter.Re
             )
         );
 
+        holder.vSource.setText(item.getSource());
+
         // define an on click listener to open PlaybackFragment
         holder.cardView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -150,6 +152,7 @@ public class FileViewerAdapter extends RecyclerView.Adapter<FileViewerAdapter.Re
         protected TextView vName;
         protected TextView vLength;
         protected TextView vDateAdded;
+        protected TextView vSource;
         protected View cardView;
 
         public RecordingsViewHolder(View v) {
@@ -157,6 +160,7 @@ public class FileViewerAdapter extends RecyclerView.Adapter<FileViewerAdapter.Re
             vName = (TextView) v.findViewById(R.id.file_name_text);
             vLength = (TextView) v.findViewById(R.id.file_length_text);
             vDateAdded = (TextView) v.findViewById(R.id.file_date_added_text);
+            vSource = (TextView) v.findViewById(R.id.file_source);
             cardView = v.findViewById(R.id.card_view);
         }
     }

@@ -5,4 +5,10 @@
 /.idea/*
 .DS_Store
 /build
-/.idea/
+*/.idea/*
+
+# IntelliJ project files
+.idea
+*.iml
+out
+gen
