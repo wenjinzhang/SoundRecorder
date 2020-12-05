@@ -70,17 +70,32 @@ public class SettingsFragment extends PreferenceFragment {
             }
         });
 
+
         EditTextPreference sampleRatePref = (EditTextPreference) findPreference("pref_sample_rate");
-        devicePref.setSummary(MySharedPreferences.getPrefDevice(getActivity()));
-        devicePref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+        sampleRatePref.setSummary(MySharedPreferences.getPrefSampleRate(getActivity()));
+        sampleRatePref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
-                MySharedPreferences.setPrefDevice(getActivity(), (String) newValue);
+                MySharedPreferences.setPrefSampleRate(getActivity(), (String) newValue);
 
-                EditTextPreference devicePref = (EditTextPreference) findPreference("pref_sample_rate");
-                devicePref.setSummary(MySharedPreferences.getPrefDevice(getActivity()));
+                EditTextPreference  sampleRatePref = (EditTextPreference) findPreference("pref_sample_rate");
+                sampleRatePref.setSummary(MySharedPreferences.getPrefSampleRate(getActivity()));
                 return true;
             }
         });
+
+        EditTextPreference audioSampleRatePref = (EditTextPreference) findPreference("pref_audio_sample_rate");
+        audioSampleRatePref.setSummary(MySharedPreferences.getPrefAudioSampleRate(getActivity()));
+        audioSampleRatePref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                MySharedPreferences.setPrefAudioSampleRate(getActivity(), (String) newValue);
+                EditTextPreference audioSampleRatePref = (EditTextPreference) findPreference("pref_audio_sample_rate");
+                audioSampleRatePref.setSummary(MySharedPreferences.getPrefAudioSampleRate(getActivity()));
+                return true;
+            }
+        });
+
+
     }
 }
