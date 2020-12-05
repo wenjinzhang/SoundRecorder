@@ -91,6 +91,9 @@ public class RecordingService extends Service {
             mRecorder.setAudioEncodingBitRate(192000);
         }
 
+        int audioSampleRate = Integer.parseInt(MySharedPreferences.getPrefAudioSampleRate(this));
+        mRecorder.setAudioSamplingRate(audioSampleRate);
+
         try {
             mRecorder.prepare();
             mRecorder.start();

@@ -21,7 +21,12 @@
         />
     <EditTextPreference
         android:key="pref_sample_rate"
-        android:title= "Sample Rate(Hz)"
+        android:title= "Accelerometer Sample Rate(Hz)"
         android:summary="100"
+        />
+    <EditTextPreference
+        android:key="pref_audio_sample_rate"
+        android:title= "Audio Sample Rate(Hz)"
+        android:summary="8000"
         />
 </PreferenceScreen>

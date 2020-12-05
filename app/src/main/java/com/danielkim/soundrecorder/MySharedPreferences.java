@@ -13,6 +13,7 @@ public class MySharedPreferences {
     private static String PREF_HOST= "pref_host";
     private static String PREF_DEVICE = "pref_device";
     private static String PREF_SAMPLE_RATE = "pref_sample_rate";
+    private static String PREF_AUDIO_SAMPLE_RATE = "pref_audio_sample_rate";
 
     public static void setPrefHighQuality(Context context, boolean isEnabled) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
@@ -64,5 +65,20 @@ public class MySharedPreferences {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         return preferences.getString(PREF_SAMPLE_RATE, "100");
     }
+
+    public static void setPrefAudioSampleRate(Context context, String device) {
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putString(PREF_AUDIO_SAMPLE_RATE, device);
+        editor.apply();
+    }
+
+    public static String getPrefAudioSampleRate(Context context) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return preferences.getString(PREF_AUDIO_SAMPLE_RATE, "8000");
+    }
+
+
 
 }
