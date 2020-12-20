@@ -15,6 +15,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.Chronometer;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -71,6 +72,8 @@ public class RecordFragment extends Fragment {
     long timeWhenPaused = 0; //stores time when user clicks pause button
 
     private Button mLoadServerButton = null;
+
+    private EditText mExpNameEditText =null;
 
     private DBHelper mDatabase;
 
@@ -160,6 +163,9 @@ public class RecordFragment extends Fragment {
             }
         });
 
+        // set ExpName
+        mExpNameEditText = (EditText) recordView.findViewById(R.id.editTextExpName);
+
         return recordView;
     }
 
@@ -168,6 +174,10 @@ public class RecordFragment extends Fragment {
     private void onRecord(boolean start){
 
         Intent intent = new Intent(getActivity(), RecordingService.class);
+
+        // put exp name to intent
+        Log.d(LOG_TAG, mExpNameEditText.getText().toString());
+        intent.putExtra("exp_name", mExpNameEditText.getText().toString());
 
         if (start) {
             // start recording

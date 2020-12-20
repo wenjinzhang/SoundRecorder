@@ -47,6 +47,8 @@ public class RecordingService extends Service {
     private Timer mTimer = null;
     private TimerTask mIncrementTimerTask = null;
 
+    private String expName = null;
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -64,7 +66,9 @@ public class RecordingService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        expName = intent.getStringExtra("exp_name");
         startRecording();
+
         return START_STICKY;
     }
 
@@ -114,7 +118,7 @@ public class RecordingService extends Service {
         do{
             count++;
 
-            mFileName = getString(R.string.default_file_name)
+            mFileName = expName + "_" +  getString(R.string.default_file_name)
                     + "_" + (mDatabase.getCount() + count) + ".mp4";
             mFilePath = Environment.getExternalStorageDirectory().getAbsolutePath();
             mFilePath += "/SoundRecorder/" + mFileName;

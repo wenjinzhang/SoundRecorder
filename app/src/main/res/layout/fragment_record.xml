@@ -102,4 +102,15 @@
         android:text="Load from Server"
         android:textAllCaps="true" />
 
+
+    <EditText
+        android:id="@+id/editTextExpName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:text="Experiment name"
+        android:layout_above="@+id/recording_status_text"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="60dp"/>
+
 </RelativeLayout>
